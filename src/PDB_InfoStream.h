@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Foundation/PDB_Macros.h"
 #include "PDB_Types.h"
 #include "PDB_CoalescedMSFStream.h"
 
@@ -21,6 +22,18 @@ namespace PDB
 		explicit InfoStream(const RawFile& file) PDB_NO_EXCEPT;
 
 		PDB_DEFAULT_MOVE(InfoStream);
+
+		// Returns the header of the stream.
+		PDB_NO_DISCARD inline const Header* GetHeader(void) const PDB_NO_EXCEPT
+		{
+			return m_header;
+		}
+
+		// Returns whether the PDB file was linked using /DEBUG:FASTLINK.
+		PDB_NO_DISCARD inline bool UsesDebugFastLink(void) const PDB_NO_EXCEPT
+		{
+			return m_usesDebugFastlink;
+		}
 
 	private:
 		CoalescedMSFStream m_stream;

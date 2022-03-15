@@ -116,6 +116,8 @@ When reading streams in a concurrent fashion, you will most likely be limited by
 
 At the moment, there is no support for C13 line information and the TPI type stream data, because Live++ does not make use of that information yet. However, we will gladly accept PRs, or implement support in the future.
 
+Furthermore, PDBs linked using /DEBUG:FASTLINK are not supported. These PDBs do not contain much information, since private symbol information is distributed among object files and library files.
+
 ## Documentation
 
 If you are unfamiliar with the basic structure of a PDB file, the <a href="https://llvm.org/docs/PDB/index.html">LLVM documentation</a> serves as a good introduction.
@@ -132,13 +134,17 @@ Consult the example code to see how to read and parse the PDB streams.
 
 ## Examples
 
-### Symbols (ExampleSymbols.cpp)
+### Symbols (<a href="https://github.com/MolecularMatters/raw_pdb/blob/main/src/Examples/ExampleSymbols.cpp">ExampleSymbols.cpp</a>)
 
 A basic example that shows how to load and symbols from public, global, and module streams.
 
-### Contributions (ExampleContributions.cpp)
+### Contributions (<a href="https://github.com/MolecularMatters/raw_pdb/blob/main/src/Examples/ExampleContributions.cpp">ExampleContributions.cpp</a>)
 
 A basic example that shows how to load contributions, sort them by size, and output the 20 largest ones along with the object file they originated from.
+
+### Function symbols (<a href="https://github.com/MolecularMatters/raw_pdb/blob/main/src/Examples/ExampleFunctionSymbols.cpp">ExampleFunctionSymbols.cpp</a>)
+
+An example intended for profiler developers that shows how to enumerate all function symbols and retrieve or compute their code size.
 
 ## Sponsoring or supporting RawPDB
 

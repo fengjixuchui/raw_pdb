@@ -5,6 +5,7 @@
 #include "ExampleMemoryMappedFile.h"
 #include "PDB.h"
 #include "PDB_RawFile.h"
+#include "PDB_InfoStream.h"
 #include "PDB_DBIStream.h"
 
 
@@ -18,27 +19,23 @@ namespace
 				return false;
 
 			case PDB::ErrorCode::InvalidSuperBlock:
-				PDB_LOG_ERROR("Invalid Superblock");
+				printf("Invalid Superblock\n");
 				return true;
 
 			case PDB::ErrorCode::InvalidFreeBlockMap:
-				PDB_LOG_ERROR("Invalid free block map");
-				return true;
-
-			case PDB::ErrorCode::UnhandledDirectorySize:
-				PDB_LOG_ERROR("Directory is too large");
+				printf("Invalid free block map\n");
 				return true;
 
 			case PDB::ErrorCode::InvalidSignature:
-				PDB_LOG_ERROR("Invalid stream signature");
+				printf("Invalid stream signature\n");
 				return true;
 
 			case PDB::ErrorCode::InvalidStreamIndex:
-				PDB_LOG_ERROR("Invalid stream index");
+				printf("Invalid stream index\n");
 				return true;
 
 			case PDB::ErrorCode::UnknownVersion:
-				PDB_LOG_ERROR("Unknown version");
+				printf("Unknown version\n");
 				return true;
 		}
 
@@ -77,6 +74,7 @@ namespace
 // declare all examples
 extern void ExampleSymbols(const PDB::RawFile&, const PDB::DBIStream&);
 extern void ExampleContributions(const PDB::RawFile&, const PDB::DBIStream&);
+extern void ExampleFunctionSymbols(const PDB::RawFile&, const PDB::DBIStream&);
 
 
 int main(void)
@@ -86,13 +84,15 @@ int main(void)
 #else
 	const wchar_t* const pdbPath = LR"(..\bin\x64\Release\Examples.pdb)";
 #endif
-	
+
 	printf("Opening PDB file %ls\n", pdbPath);
 
 	// try to open the PDB file and check whether all the data we need is available
 	MemoryMappedFile::Handle pdbFile = MemoryMappedFile::Open(pdbPath);
 	if (!pdbFile.baseAddress)
 	{
+		printf("Cannot memory-map file %ls\n", pdbPath);
+
 		return 1;
 	}
 
@@ -111,17 +111,28 @@ int main(void)
 		return 3;
 	}
 
-	const PDB::DBIStream dbiStream = PDB::CreateDBIStream(rawPdbFile);
-	if (!HasValidDBIStreams(rawPdbFile, dbiStream))
+	const PDB::InfoStream infoStream(rawPdbFile);
+	if (infoStream.UsesDebugFastLink())
 	{
+		printf("PDB was linked using unsupported option /DEBUG:FASTLINK\n");
+
 		MemoryMappedFile::Close(pdbFile);
 
 		return 4;
 	}
 
+	const PDB::DBIStream dbiStream = PDB::CreateDBIStream(rawPdbFile);
+	if (!HasValidDBIStreams(rawPdbFile, dbiStream))
+	{
+		MemoryMappedFile::Close(pdbFile);
+
+		return 5;
+	}
+
 	// run all examples
 	ExampleContributions(rawPdbFile, dbiStream);
 	ExampleSymbols(rawPdbFile, dbiStream);
+	ExampleFunctionSymbols(rawPdbFile, dbiStream);
 
 	MemoryMappedFile::Close(pdbFile);
 
