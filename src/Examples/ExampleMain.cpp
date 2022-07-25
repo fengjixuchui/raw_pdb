@@ -7,7 +7,7 @@
 #include "PDB_RawFile.h"
 #include "PDB_InfoStream.h"
 #include "PDB_DBIStream.h"
-
+#include "PDB_TPIStream.h"
 
 namespace
 {
@@ -75,23 +75,24 @@ namespace
 extern void ExampleSymbols(const PDB::RawFile&, const PDB::DBIStream&);
 extern void ExampleContributions(const PDB::RawFile&, const PDB::DBIStream&);
 extern void ExampleFunctionSymbols(const PDB::RawFile&, const PDB::DBIStream&);
+extern void ExampleTypes(const PDB::TPIStream&);
 
-
-int main(void)
+int main(int argc, char** argv)
 {
-#ifdef _DEBUG
-	const wchar_t* const pdbPath = LR"(..\bin\x64\Debug\Examples.pdb)";
-#else
-	const wchar_t* const pdbPath = LR"(..\bin\x64\Release\Examples.pdb)";
-#endif
+	if (argc != 2)
+	{
+		printf("Usage: Examples <PDB path>\nError: Incorrect usage");
 
-	printf("Opening PDB file %ls\n", pdbPath);
+		return 1;
+	}
+
+	printf("Opening PDB file %s\n", argv[1]);
 
 	// try to open the PDB file and check whether all the data we need is available
-	MemoryMappedFile::Handle pdbFile = MemoryMappedFile::Open(pdbPath);
+	MemoryMappedFile::Handle pdbFile = MemoryMappedFile::Open(argv[1]);
 	if (!pdbFile.baseAddress)
 	{
-		printf("Cannot memory-map file %ls\n", pdbPath);
+		printf("Cannot memory-map file %s\n", argv[1]);
 
 		return 1;
 	}
@@ -121,8 +122,22 @@ int main(void)
 		return 4;
 	}
 
+	const auto h = infoStream.GetHeader();
+	printf("Version %u, signature %u, age %u, GUID %08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x\n",
+		static_cast<uint32_t>(h->version), h->signature, h->age,
+		h->guid.Data1, h->guid.Data2, h->guid.Data3,
+		h->guid.Data4[0], h->guid.Data4[1], h->guid.Data4[2], h->guid.Data4[3], h->guid.Data4[4], h->guid.Data4[5], h->guid.Data4[6], h->guid.Data4[7]);
+
 	const PDB::DBIStream dbiStream = PDB::CreateDBIStream(rawPdbFile);
 	if (!HasValidDBIStreams(rawPdbFile, dbiStream))
+	{
+		MemoryMappedFile::Close(pdbFile);
+
+		return 5;
+	}
+
+	const PDB::TPIStream tpiStream = PDB::CreateTPIStream(rawPdbFile);
+	if (PDB::HasValidTPIStream(rawPdbFile) != PDB::ErrorCode::Success)
 	{
 		MemoryMappedFile::Close(pdbFile);
 
@@ -133,6 +148,7 @@ int main(void)
 	ExampleContributions(rawPdbFile, dbiStream);
 	ExampleSymbols(rawPdbFile, dbiStream);
 	ExampleFunctionSymbols(rawPdbFile, dbiStream);
+	ExampleTypes(tpiStream);
 
 	MemoryMappedFile::Close(pdbFile);
 
